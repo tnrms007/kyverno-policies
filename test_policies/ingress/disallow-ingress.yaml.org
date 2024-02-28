@@ -1,0 +1,28 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-app-test-domain
+spec:
+  validationFailureAction: Enforce
+  rules:
+  background: true
+  rules:
+  - name: validate-ingress-host 
+    match:
+      any:
+      - resources:
+          kinds:
+          - Ingress
+    exclude:
+      any:
+      - resources:
+          kinds:
+          - Ingress
+          namespaces:
+          - "test"
+    validate:
+      message: "This domains can only be used by specific users.\n"
+      pattern:
+        spec:
+          rules:
+           =(host): "!*.app.test.com"

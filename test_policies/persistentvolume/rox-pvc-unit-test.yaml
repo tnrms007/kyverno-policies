@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-pvc-rox
+  namespace: test
+spec:
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 2Gi # not allow 1Ti, 1Mi 1..
+  storageClassName: openebs-hostpath ## any storage class

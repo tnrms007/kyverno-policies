@@ -1,0 +1,135 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: prefix-pvc-name
+spec:
+  validationFailureAction: Enforce
+  background: false    
+  rules:
+  - name: pvc-unit-type-check
+    match:
+      any:
+      - resources:
+          kinds:
+          - PersistentVolumeClaim
+    validate:
+      message: "The PVC Unit Type (Byte) must be follows.\nOnly Gi type can be used and require filed requests.\n*Example) 1Gi, 10Gi, 8Gi..\n"
+      pattern:
+        spec:
+          resources:
+            requests:
+              storage: "*Gi"
+  - name: pvc-resource-request-mutiple-check
+    match:
+      any:
+      - resources:
+          kinds:
+          - PersistentVolumeClaim
+    validate:
+      message: "The PVC Size Requests must be follows.\nOnly Gi type and multiple of 8.\n*Example) 8Gi, 16Gi, 24Gi..\n"
+      deny:
+        conditions:
+          all:
+          - key: "{{ request.object.spec.storageClassName }}"
+            operator: Equals
+            value: "openebs-hostpath*"
+          - key: "{{ modulo('{{ request.object.spec.resources.requests.storage }}', '8Gi') }}"
+            operator: NotEquals
+            value: 0Gi
+          - key: "{{request.operation || 'BACKGROUND'}}"
+            operator: AnyNotIn
+            value:
+            - "DELETE"
+            - "UPDATE"
+  - name: pvc-accessmodes-rwo-check
+    match:
+      any:
+      - resources:
+          kinds:
+          - PersistentVolumeClaim
+    validate:
+      message: "The PVC name must be follows.\nWhen using rwo mode, subffix is -rwo.\n*Example) RWO AccessModes is test1-rwo\n"
+      deny:
+        conditions:
+          all:
+          - key: "{{ request.object.spec.accessModes[] }}"
+            operator: AnyIn 
+            value: ReadWriteOnce 
+          - key: "{{ request.object.metadata.name }}"
+            operator: NotEquals
+            value: "*-rwo"
+          ## 해당 부분은 기존 PVC들이 지워지지 않아 넣은 거임, 심지어 UPDATE 가 없으면 제대로 삭제되지도않음.
+          - key: "{{request.operation || 'BACKGROUND'}}"
+            operator: AnyNotIn
+            value:  
+            - "DELETE"
+            - "UPDATE"
+  - name: pvc-accessmodes-rwx-check
+    match:
+      any:
+      - resources:
+          kinds:
+          - PersistentVolumeClaim
+    validate:
+      message: "The PVC name must be follows.\nWhen using rwx mode, subffix is -rwx.\n*Example) RWX AccessModes is test1-rwx\n"
+      deny:
+        conditions:
+          all:
+          - key: "{{ request.object.spec.accessModes[] }}"
+            operator: AnyIn
+            value: ReadWriteMany
+          - key: "{{ request.object.metadata.name }}"
+            operator: NotEquals
+            value: "*-rwx"
+          ## 해당 부분은 기존 PVC들이 지워지지 않아 넣은 거임, 심지어 UPDATE 가 없으면 제대로 삭제되지도않음.
+          - key: "{{request.operation || 'BACKGROUND'}}"
+            operator: AnyNotIn
+            value:
+            - "DELETE"
+            - "UPDATE"              
+  - name: pvc-accessmodes-rox-check
+    match:
+      any:
+      - resources:
+          kinds:
+          - PersistentVolumeClaim
+    validate:
+      message: "The PVC name must be follows.\nWhen using rox mode, subffix is -rox.\n*Example) ROX AccessModes is test1-rox\n"
+      deny:
+        conditions:
+          all:
+          - key: "{{ request.object.spec.accessModes[] }}"
+            operator: AnyIn
+            value: ReadOnlyMany
+          - key: "{{ request.object.metadata.name }}"
+            operator: NotEquals
+            value: "*-rox"
+          ## 해당 부분은 기존 PVC들이 지워지지 않아 넣은 거임, 심지어 UPDATE 가 없으면 제대로 삭제되지도않음.
+          - key: "{{request.operation || 'BACKGROUND'}}"
+            operator: AnyNotIn
+            value:
+            - "DELETE"
+            - "UPDATE"
+  - name: pvc-accessmodes-rwop-check
+    match:
+      any:
+      - resources:
+          kinds:
+          - PersistentVolumeClaim
+    validate:
+      message: "The PVC name must be follows.\nWhen using rwop mode, subffix is -rox.\n*Example) ROX AccessModes is test1-rwop\n"
+      deny:
+        conditions:
+          all:
+          - key: "{{ request.object.spec.accessModes[] }}"
+            operator: AnyIn
+            value: ReadWriteOncePod
+          - key: "{{ request.object.metadata.name }}"
+            operator: NotEquals
+            value: "*-rwop"
+          ## 해당 부분은 기존 PVC들이 지워지지 않아 넣은 거임, 심지어 UPDATE 가 없으면 제대로 삭제되지도않음.
+          - key: "{{request.operation || 'BACKGROUND'}}"
+            operator: AnyNotIn
+            value:
+            - "DELETE"
+            - "UPDATE"

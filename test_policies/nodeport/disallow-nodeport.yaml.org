@@ -1,0 +1,41 @@
+# Success
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-nodeport
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  - name: validate-nodeport
+    match:
+      any:
+      - resources:
+          kinds:
+          - Service
+    exclude:
+      any:
+      - resources:
+          kinds:
+          - Service
+          namespaces:
+          - "test"
+    validate:
+      message: "Services of type NodePort are not allowed."
+      pattern:
+        spec:
+          =(type): "!NodePort"    
+  - name: specfic-namespace-range_20240227
+    match:
+      any:
+      - resources:
+          kinds:
+          - Service
+          namespaces:
+          - "test"
+    validate:
+      message: "Services of type NodePort Range is Not "
+      pattern:
+        spec:
+          ports:
+          - nodePort: 30000-30010
